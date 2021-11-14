@@ -3,7 +3,7 @@
 
 Use 0-8 or arrow keys to change sound pitch.
 
-Click on a specific waveform to get its sound (default: sine).
+Click on a particular waveform to get its sound (default: sine wave).
 
 Set sliders with attack, sustain and release and click <i>Set sound</i> to apply changes.
 
