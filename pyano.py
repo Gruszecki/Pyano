@@ -1,11 +1,11 @@
-import tkinter
-from tkinter.constants import ANCHOR, HORIZONTAL, LEFT
 import numpy as np
+from pynput import keyboard
 import simpleaudio as sa
-from pynput.keyboard import Key, Listener, KeyCode
+from pynput.keyboard import Key, Listener, KeyCode, Controller
 import matplotlib.pyplot as plt
 import tkinter as tk
-from tkinter import Canvas, StringVar, ttk, IntVar
+from tkinter import StringVar, ttk, IntVar
+from tkinter.constants import HORIZONTAL, S
 from PIL import ImageTk, Image
 
 SOUND_H = 4
@@ -212,6 +212,23 @@ def get_sound_properties():
     SUSTAIN = sustain_var.get()
     RELEASE = release_var.get()
 
+    if ATTACK > 10:
+        ATTACK = 10
+    if ATTACK + SUSTAIN > 10:
+        SUSTAIN = 10 - ATTACK
+    if ATTACK + SUSTAIN + RELEASE > 10:
+        RELEASE = 10 - (ATTACK + SUSTAIN)
+
+    attack_var.set(ATTACK)
+    sustain_var.set(SUSTAIN)
+    release_var.set(RELEASE)
+
+def close_app():
+    keyboard = Controller()
+    keyboard.press(Key.esc)
+    keyboard.release(Key.esc)
+    window.destroy()
+
 window = tk.Tk()
 window.title('Pyano')
 
@@ -239,7 +256,7 @@ tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=release
 
 tk.Button(window, text='Set sound', command=get_sound_properties).grid(row=5, column=1)
 
-ttk.Button(window, text='Quit', command=window.destroy).grid(row=6, columnspan=2)
+ttk.Button(window, text='Quit', command=close_app).grid(row=6, columnspan=2)
 
 with Listener(on_press=on_press, on_release=on_release) as listener:
     window.mainloop()
