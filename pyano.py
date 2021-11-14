@@ -1,11 +1,17 @@
+import tkinter
+from tkinter.constants import ANCHOR, HORIZONTAL, LEFT
 import numpy as np
 import simpleaudio as sa
 from pynput.keyboard import Key, Listener, KeyCode
 import matplotlib.pyplot as plt
-from tkinter import *
-from tkinter import ttk
+import tkinter as tk
+from tkinter import Canvas, StringVar, ttk, IntVar
+from PIL import ImageTk, Image
 
 SOUND_H = 4
+ATTACK  = 0
+SUSTAIN = 0
+RELEASE = 1
 
 class FREQ():
     key_coverity = {'g':'C', 'y':'Cis', 'h':'D', 'u':'Dis', 'j':'E', 'k':'F', 'o':'Fis', 'l':'G', 'p':'Gis', ';':'A', '[':'B', '\'':'H'}
@@ -123,18 +129,16 @@ def play_note(freq):
     fs = 44100
 
     total_length = 10
-    attack  = 1
-    sustain = 1
-    release = 1
-    silence = total_length-(attack+sustain+release)
+    
+    silence = total_length-(ATTACK+SUSTAIN+RELEASE)
 
     t_r = np.linspace(0, total_length, total_length*fs, endpoint=False)
     n_r = freq*t_r*2*np.pi
 
     sound_calculation = np.concatenate((
-        np.linspace(0, 1, int( (total_length*fs)*(attack /total_length) ), endpoint=True),
-        np.linspace(1, 1, int( (total_length*fs)*(sustain/total_length) ), endpoint=True),
-        np.linspace(1, 0, int( (total_length*fs)*(release/total_length) ), endpoint=True), 
+        np.linspace(0, 1, int( (total_length*fs)*(ATTACK /total_length) ), endpoint=True),
+        np.linspace(1, 1, int( (total_length*fs)*(SUSTAIN/total_length) ), endpoint=True),
+        np.linspace(1, 0, int( (total_length*fs)*(RELEASE/total_length) ), endpoint=True), 
         np.linspace(0, 0, int( (total_length*fs)*(silence/total_length) )) 
             ))
 
@@ -186,41 +190,63 @@ def on_press(key):
         eval(exp_build)
     elif tone_h:
         SOUND_H = int(tone_h)
+        octave_text.set(SOUND_H)
     else: 
-        if key == Key.up and SOUND_H < 8:
+        if (key == Key.up or key == Key.right) and SOUND_H < 8:
             SOUND_H += 1
-        elif key == Key.down and SOUND_H > 0:
+            octave_text.set(SOUND_H)
+        elif (key == Key.down or key == Key.left) and SOUND_H > 0:
             SOUND_H -= 1
+            octave_text.set(SOUND_H)
                 
 def on_release(key):
     if key == Key.esc:
         return False
 
-root = Tk()
-frm = ttk.Frame(root, padding=10)
-frm.grid()
+def get_sound_properties():
+    global ATTACK
+    global SUSTAIN
+    global RELEASE
 
-ttk.Label(frm, text='Pyano v1').grid(column=0, row=0)
-ttk.Button(frm, text='Quit', command=root.destroy).grid(column=1, row=0)
+    ATTACK = attack_var.get()
+    SUSTAIN = sustain_var.get()
+    RELEASE = release_var.get()
+
+window = tk.Tk()
+window.title('Pyano')
+
+img_path = 'C:\Development\Pyano v1\piano.png'
+img = ImageTk.PhotoImage(Image.open(img_path))
+img_label = tk.Label(window, image=img)
+
+img_label.grid(row=0, columnspan=2)
+
+tk.Label(window, text='Octave (0-8 or arrows):').grid(row=1, column=0)
+octave_text = StringVar(window, SOUND_H)
+octave_label = tk.Label(window, textvariable=octave_text).grid(row=1, column=1)
+
+tk.Label(window, text='Attack').grid(row=2, column=0)
+attack_var = IntVar(window, ATTACK)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=attack_var).grid(row=2, column=1)
+
+tk.Label(window, text='Sustain').grid(row=3, column=0)
+sustain_var = IntVar(window, SUSTAIN)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=sustain_var).grid(row=3, column=1)
+
+tk.Label(window, text='Release').grid(row=4, column=0)
+release_var = IntVar(window, RELEASE)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=release_var).grid(row=4, column=1)
+
+tk.Button(window, text='Set sound', command=get_sound_properties).grid(row=5, column=1)
+
+ttk.Button(window, text='Quit', command=window.destroy).grid(row=6, columnspan=2)
 
 with Listener(on_press=on_press, on_release=on_release) as listener:
-    root.mainloop()
+    window.mainloop()
     listener.join()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-############## LABORATORY ####################
+################ LABORATORY ####################
 
 # fs = 44100
 # freq = 440
