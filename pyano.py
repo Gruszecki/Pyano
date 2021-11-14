@@ -1,5 +1,4 @@
 import numpy as np
-from pynput import keyboard
 import simpleaudio as sa
 from pynput.keyboard import Key, Listener, KeyCode, Controller
 import matplotlib.pyplot as plt
@@ -7,11 +6,13 @@ import tkinter as tk
 from tkinter import StringVar, ttk, IntVar
 from tkinter.constants import HORIZONTAL, S
 from PIL import ImageTk, Image
+from scipy import signal
 
 SOUND_H = 4
 ATTACK  = 0
 SUSTAIN = 0
 RELEASE = 1
+WAVE = 0        # 0: sine, 1: sawtooth, 2: square
 
 class FREQ():
     key_coverity = {'g':'C', 'y':'Cis', 'h':'D', 'u':'Dis', 'j':'E', 'k':'F', 'o':'Fis', 'l':'G', 'p':'Gis', ';':'A', '[':'B', '\'':'H'}
@@ -142,7 +143,13 @@ def play_note(freq):
         np.linspace(0, 0, int( (total_length*fs)*(silence/total_length) )) 
             ))
 
-    note_total = np.sin(n_r) * sound_calculation
+    if WAVE == 0:
+        note_total = np.sin(n_r) * sound_calculation
+    elif WAVE == 1:
+        note_total = signal.sawtooth(n_r) * sound_calculation
+    elif WAVE == 2:
+        note_total = signal.square(n_r) * sound_calculation
+
     audio_total = note_total * (2**15 - 1) / np.max(np.abs(note_total))
     audio_total = audio_total.astype(np.int16)
 
@@ -229,35 +236,54 @@ def close_app():
     keyboard.release(Key.esc)
     window.destroy()
 
+def set_wave(wave):
+    # 0: sine
+    # 1: sawtooth
+    global WAVE 
+    WAVE = wave
+
 window = tk.Tk()
 window.title('Pyano')
 
-img_path = 'C:\Development\Pyano v1\piano.png'
-img = ImageTk.PhotoImage(Image.open(img_path))
+# Loading logo image
+img = ImageTk.PhotoImage(Image.open('piano.png'))
 img_label = tk.Label(window, image=img)
+logo_rowspan = 1
+img_label.grid(row=0, columnspan=3)
 
-img_label.grid(row=0, columnspan=2)
+# Loading waves images/buttons
+img_sine = ImageTk.PhotoImage(Image.open('sine.png'))
+tk.Button(window, image=img_sine, command=lambda: set_wave(0)).grid(row=1, column=0)    # set_wave(0) for sine wave
 
-tk.Label(window, text='Octave (0-8 or arrows):').grid(row=1, column=0)
+img_sawtooth = ImageTk.PhotoImage(Image.open('sawtooth.png'))
+tk.Button(window, image=img_sawtooth, command=lambda: set_wave(1)).grid(row=1, column=1)    # set_wave(1) for sawtooth wave
+
+img_square = ImageTk.PhotoImage(Image.open('square.png'))
+tk.Button(window, image=img_square, command=lambda: set_wave(2)).grid(row=1, column=2)    # set_wave(2) for square wave
+
+# Settings
+tk.Label(window, text='Octave:').grid(row=logo_rowspan+1, column=0)
 octave_text = StringVar(window, SOUND_H)
-octave_label = tk.Label(window, textvariable=octave_text).grid(row=1, column=1)
+octave_label = tk.Label(window, textvariable=octave_text).grid(row=logo_rowspan+1, column=1)
 
-tk.Label(window, text='Attack').grid(row=2, column=0)
+tk.Label(window, text='Attack:').grid(row=logo_rowspan+2, column=0)
 attack_var = IntVar(window, ATTACK)
-tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=attack_var).grid(row=2, column=1)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=attack_var).grid(row=logo_rowspan+2, column=1)
 
-tk.Label(window, text='Sustain').grid(row=3, column=0)
+tk.Label(window, text='Sustain:').grid(row=logo_rowspan+3, column=0)
 sustain_var = IntVar(window, SUSTAIN)
-tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=sustain_var).grid(row=3, column=1)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=sustain_var).grid(row=logo_rowspan+3, column=1)
 
-tk.Label(window, text='Release').grid(row=4, column=0)
+tk.Label(window, text='Release:').grid(row=logo_rowspan+4, column=0)
 release_var = IntVar(window, RELEASE)
-tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=release_var).grid(row=4, column=1)
+tk.Scale(window, from_=0, to=10, orient=HORIZONTAL, length=100, variable=release_var).grid(row=logo_rowspan+4, column=1)
 
-tk.Button(window, text='Set sound', command=get_sound_properties).grid(row=5, column=1)
+tk.Button(window, text='Set sound', command=get_sound_properties).grid(row=logo_rowspan+3, column=2)
 
-ttk.Button(window, text='Quit', command=close_app).grid(row=6, columnspan=2)
+# Exit
+ttk.Button(window, text='Quit', command=close_app).grid(row=logo_rowspan+6, columnspan=3, padx=20, pady=20)
 
+# Open app
 with Listener(on_press=on_press, on_release=on_release) as listener:
     window.mainloop()
     listener.join()
@@ -269,9 +295,9 @@ with Listener(on_press=on_press, on_release=on_release) as listener:
 # freq = 440
 
 # total_length = 10
-# attack  = 0
-# sustain = 0
-# release = 0
+# attack  = 1
+# sustain = 1
+# release = 1
 # silence = total_length-(attack+sustain+release)
 
 # t_r = np.linspace(0, total_length, total_length*fs, endpoint=False)
@@ -284,7 +310,7 @@ with Listener(on_press=on_press, on_release=on_release) as listener:
 #     np.linspace(0, 0, int( (total_length*fs)*(silence/total_length) )) 
 #         ))
 
-# note_total = np.sin(n_r) * sound_calculation
+# note_total = signal.square(n_r) * sound_calculation
 # audio_total = note_total * (2**15 - 1) / np.max(np.abs(note_total))
 # audio_total = audio_total.astype(np.int16)
 
